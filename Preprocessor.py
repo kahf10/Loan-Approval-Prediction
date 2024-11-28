@@ -145,7 +145,7 @@ class Preprocessor:
         """
         Saves the preprocessed dataset to a specified file path.
         """
-        outputPath = './PreprocessedData.csv'
+        outputPath = './PreprocessedDataset.csv'
         print(f"Saving preprocessed dataset to {outputPath}...")
         self.data.to_csv(outputPath, index=False)
         print("Dataset saved successfully.")

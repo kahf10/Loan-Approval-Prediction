@@ -11,10 +11,13 @@ class MasterControl:
         """
         Executes the preprocessing pipeline and saves the clean dataset.
         """
+        print("-" * 150)
+        print("-" * 150)
+
         print("Starting the preprocessing pipeline...")
         preprocessor = Preprocessor(self.datasetPath)
-        cleanData = preprocessor.runPipeline()
-        print("Cleaned dataset saved to:", self.preprocessedPath)
+        preprocessor.runPipeline()
+
         print("-" * 150)
 
     def runModels(self):

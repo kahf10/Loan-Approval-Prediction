@@ -88,12 +88,13 @@ class LogisticRegressionModel:
         train_accuracy, train_precision, train_recall, train_f1 = self.calculateMetrics(y_train, y_pred_train)
         val_accuracy, val_precision, val_recall, val_f1 = self.calculateMetrics(y_val, y_pred_val)
 
+        print("_" * 150)
         print("Final Training Metrics:")
-        print(f"Accuracy: {train_accuracy:.4f}, Precision: {train_precision:.4f}, Recall: {train_recall:.4f}, F1: {train_f1:.4f}")
-        print("_" * 80)
+        print(f"    Accuracy: {train_accuracy:.4f}, Precision: {train_precision:.4f}, Recall: {train_recall:.4f}, F1: {train_f1:.4f}")
+        print("_" * 150)
         print("Final Validation Metrics:")
-        print(f"Accuracy: {val_accuracy:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1: {val_f1:.4f}")
-        print("_" * 80)
+        print(f"    Accuracy: {val_accuracy:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1: {val_f1:.4f}")
+        print("_" * 150)
 
         # Loss plot
         plt.plot(range(len(train_losses)), train_losses, label='Training Loss')

@@ -31,11 +31,25 @@ class Preprocessor:
 
         print("\nNumerical features:")
         for feature in numericalFeatures:
-            print(f"{feature} (Unique: {self.data[feature].nunique()})")
+            print(f"    {feature} (Unique: {self.data[feature].nunique()})")
 
         print("\nCategorical features:")
         for feature in categoricalFeatures:
-            print(f"{feature} (Unique: {self.data[feature].nunique()})")
+            print(f"    {feature} (Unique: {self.data[feature].nunique()})")
+
+    def printClassPriors(self):
+        """
+        Prints the class priors (proportion of each class) for the specified target variable.
+
+        """
+
+        classCounts = self.data['LoanApproved'].value_counts()
+        totalSamples = len(self.data)
+
+        print(f"Class Priors for '{'LoanApproved'}':")
+        for cls, count in classCounts.items():
+            prior = count / totalSamples
+            print(f"  Class {cls}: {prior:.4f} ({count}/{totalSamples})")
 
     def printCategoricalFeatureValues(self):
         """
@@ -46,8 +60,8 @@ class Preprocessor:
                                "LoanPurpose"]
         for feature in categoricalFeatures:
             if feature in self.data.columns:
-                print(f"\nFeature: {feature}")
-                print(f"Unique Values: {self.data[feature].unique()}")
+                print(f"Feature: {feature}")
+                print(f"    Unique Values: {self.data[feature].unique()}")
 
     def ordinalEncode(self):
         """
@@ -64,9 +78,9 @@ class Preprocessor:
             print(f"Ordinal encoding feature: {feature}")
             if feature in self.data.columns:
                 self.data[feature] = self.data[feature].map(mapping)
-                print(f"Applied mapping for {feature}: {mapping}")
+                print(f"    Applied mapping for {feature}: {mapping}")
             else:
-                print(f"Feature {feature} not found in the dataset.")
+                print(f"    Feature {feature} not found in the dataset.")
 
     def oneHotEncode(self):
         """
@@ -130,7 +144,7 @@ class Preprocessor:
             for j in range(i + 1, len(correlationMatrix.columns)):
                 corr = correlationMatrix.iloc[i, j]
                 if abs(corr) > threshold:
-                    print(f"{correlationMatrix.columns[i]} and {correlationMatrix.columns[j]}: {corr:.2f}")
+                    print(f"    {correlationMatrix.columns[i]} and {correlationMatrix.columns[j]}: {corr:.2f}")
 
     def dropCollinearColumns(self):
         """
@@ -139,7 +153,7 @@ class Preprocessor:
         print("Dropping collinear columns...")
         columnsToDrop = ['Experience', 'AnnualIncome', 'TotalAssets', 'LoanAmount', 'BaseInterestRate']
         self.data.drop(columns=columnsToDrop, inplace=True, errors='ignore')
-        print(f"Columns dropped: {columnsToDrop}")
+        print(f"    Columns dropped: {columnsToDrop}")
 
     def savePreprocessedData(self):
         """
@@ -155,14 +169,18 @@ class Preprocessor:
         Executes the entire preprocessing pipeline in sequence.
         """
         lineLength = 150
-        print("Running the preprocessing pipeline...")
 
         # Step 1: Drop unnecessary columns
+        print("-" * lineLength)
         self.dropUnnecessaryColumns()
         print("-" * lineLength)
 
-        # Step 2: Summarize the dataset
+        # Step 2a: Summarize the dataset
         self.summarizeDataset()
+        print("-" * lineLength)
+
+        # Step 2b: Class Priors
+        self.printClassPriors()
         print("-" * lineLength)
 
         # Step 3: Categorical feature analysis and encoding
@@ -196,4 +214,3 @@ class Preprocessor:
         print("-" * lineLength)
 
         print("Preprocessing pipeline completed.")
-        return self.data

@@ -1,5 +1,5 @@
 import numpy as np
-from DataSplitter import DataSplitter
+import pandas as pd
 import matplotlib.pyplot as plt
 
 class LogisticRegressionModel:
@@ -13,6 +13,49 @@ class LogisticRegressionModel:
         """
         self.datasetPath = datasetPath
         self.targetVariable = targetVariable
+        self.dataset = pd.read_csv(datasetPath)
+
+    def splitData(self, randomSeed=42, testSize=1/3):
+        """
+        Splits the dataset into training and validation sets manually.
+
+        Parameters:
+        - randomSeed (int): Seed for random number generator for reproducibility.
+        - testSize (float): Fraction of the dataset to be used as validation set.
+
+        Returns:
+        - X_train, y_train, X_val, y_val: Split feature and target arrays.
+        """
+        print("Splitting dataset into training and validation sets...")
+
+        # Set random seed for reproducibility
+        np.random.seed(randomSeed)
+
+        # Shuffle the dataset indices
+        shuffledIndices = np.random.permutation(len(self.dataset))
+
+        # Determine split index
+        splitIndex = int(len(self.dataset) * (1 - testSize))
+
+        # Split indices for training and validation sets
+        trainIndices = shuffledIndices[:splitIndex]
+        valIndices = shuffledIndices[splitIndex:]
+
+        # Create training and validation datasets
+        trainSet = self.dataset.iloc[trainIndices]
+        valSet = self.dataset.iloc[valIndices]
+
+        # Debug: Confirm target column exists
+        if self.targetVariable not in self.dataset.columns:
+            raise ValueError(f"Target variable '{self.targetVariable}' not found!")
+
+        # Separate features and target
+        X_train = trainSet.drop(columns=[self.targetVariable], errors='ignore').to_numpy()
+        y_train = trainSet[self.targetVariable].to_numpy()
+        X_val = valSet.drop(columns=[self.targetVariable], errors='ignore').to_numpy()
+        y_val = valSet[self.targetVariable].to_numpy()
+
+        return X_train, y_train, X_val, y_val
 
     @staticmethod
     def computeYHat(z):
@@ -71,9 +114,8 @@ class LogisticRegressionModel:
         """
         Trains and evaluates the Logistic Regression model.
         """
-        # Split dataset using DataSplitter
-        splitter = DataSplitter(self.datasetPath, self.targetVariable)
-        X_train, y_train, X_val, y_val = splitter.splitData(testSize=0.2, randomSeed=42)
+        # Split dataset
+        X_train, y_train, X_val, y_val = self.splitData(randomSeed=42)
 
         # Add bias term to features
         X_train = np.column_stack((np.ones(X_train.shape[0]), X_train))
@@ -88,13 +130,13 @@ class LogisticRegressionModel:
         train_accuracy, train_precision, train_recall, train_f1 = self.calculateMetrics(y_train, y_pred_train)
         val_accuracy, val_precision, val_recall, val_f1 = self.calculateMetrics(y_val, y_pred_val)
 
-        print("_" * 150)
+        print("-" * 150)
         print("Final Training Metrics:")
         print(f"    Accuracy: {train_accuracy:.4f}, Precision: {train_precision:.4f}, Recall: {train_recall:.4f}, F1: {train_f1:.4f}")
-        print("_" * 150)
+        print("-" * 150)
         print("Final Validation Metrics:")
         print(f"    Accuracy: {val_accuracy:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1: {val_f1:.4f}")
-        print("_" * 150)
+        print("-" * 150)
 
         # Loss plot
         plt.plot(range(len(train_losses)), train_losses, label='Training Loss')

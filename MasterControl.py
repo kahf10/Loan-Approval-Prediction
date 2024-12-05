@@ -1,5 +1,7 @@
 from Preprocessor import Preprocessor
 from LogisticRegressionModel import LogisticRegressionModel
+from SVMModelLinear import LinearSVM
+from SVMModelPolynomial import PolynomialSVM
 
 
 class MasterControl:
@@ -25,10 +27,25 @@ class MasterControl:
         Executes model training and evaluation.
         """
         print("Starting model training and evaluation...")
+        print("-" * 150)
 
-        # Example: Logistic Regression Model
+        # Logistic Regression Model
+
+        print("\nRunning Logistic Regression Model...")
+        print("-" * 150)
         logisticModel = LogisticRegressionModel(self.preprocessedPath, "LoanApproved")
         logisticModel.trainAndEvaluate()
+
+        # print("\nRunning Linear SVM Model...")
+        # print("-" * 150)
+        # svmModel = LinearSVM("./PreprocessedDataset.csv", "LoanApproved", learning_rate=0.0001, lambda_param=0.005, n_iters=1200)
+        # svmModel.trainAndEvaluate()
+
+        # print("\n\nRunning Polynomial SVM Model...")
+        # print("-" * 150)
+        # svmModel = PolynomialSVM("./PreprocessedDataset.csv", "LoanApproved", learning_rate=0.0001, lambda_param=0.005, n_iters=1000)
+        # svmModel.trainAndEvaluate()
+
 
         # Add other models here as needed
         print("-" * 150)
@@ -37,7 +54,7 @@ class MasterControl:
         """
         Main entry point for the pipeline.
         """
-        self.runPreprocessing()
+        #self.runPreprocessing()
         self.runModels()
 
 

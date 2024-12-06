@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 
 
-class PolynomialSVM:
-    def __init__(self, datasetPath, targetVariable, learning_rate, lambda_param, n_iters, degree=2, coef0=1):
+class LinearSVM:
+    def __init__(self, datasetPath, targetVariable, learning_rate, lambda_param, n_iters):
         """
-        Initializes the Custom Polynomial SVM Model.
+        Initializes the Custom SVM Model.
 
         Parameters:
         - datasetPath (str): Path to the preprocessed dataset.
@@ -13,31 +13,14 @@ class PolynomialSVM:
         - learning_rate (float): Learning rate for weight updates.
         - lambda_param (float): Regularization parameter.
         - n_iters (int): Number of iterations for training.
-        - degree (int): Degree of the polynomial kernel.
-        - coef0 (float): Independent term in the kernel function.
         """
         self.datasetPath = datasetPath
         self.targetVariable = targetVariable
         self.lr = learning_rate
         self.lambda_param = lambda_param
         self.n_iters = n_iters
-        self.degree = degree
-        self.coef0 = coef0
-        self.alpha = None
-        self.b = 0
-
-    def polynomial_kernel(self, x, y):
-        """
-        Computes the polynomial kernel between two vectors.
-
-        Parameters:
-        - x (np.ndarray): First vector.
-        - y (np.ndarray): Second vector.
-
-        Returns:
-        - float: Polynomial kernel result.
-        """
-        return (np.dot(x, y) + self.coef0) ** self.degree
+        self.w = None
+        self.b = None
 
     def fit(self, X, y):
         """
@@ -52,36 +35,19 @@ class PolynomialSVM:
         # Convert labels to -1 and 1 if not already
         y = np.where(y <= 0, -1, 1)
 
-        # Initialize alpha values (dual coefficients) and bias
-        self.alpha = np.zeros(n_samples)
+        # Initialize weights and bias
+        self.w = np.zeros(n_features)
         self.b = 0
 
         # Training loop
         for _ in range(self.n_iters):
-            for i in range(n_samples):
-                condition = y[i] * (self._decision_function(X[i], X, y)) >= 1
+            for idx, x_i in enumerate(X):
+                condition = y[idx] * (np.dot(x_i, self.w) - self.b) >= 1
                 if condition:
-                    self.alpha[i] -= self.lr * (2 * self.lambda_param * self.alpha[i])
+                    self.w -= self.lr * (2 * self.lambda_param * self.w)
                 else:
-                    self.alpha[i] -= self.lr * (2 * self.lambda_param * self.alpha[i] - y[i] * self.polynomial_kernel(X[i], X[i]))
-                    self.b -= self.lr * y[i]
-
-    def _decision_function(self, x_i, X, y):
-        """
-        Computes the decision function for a given sample.
-
-        Parameters:
-        - x_i (np.ndarray): Input vector.
-        - X (np.ndarray): Feature matrix.
-        - y (np.ndarray): Target labels.
-
-        Returns:
-        - float: Decision function value.
-        """
-        result = 0
-        for alpha_j, x_j, y_j in zip(self.alpha, X, y):
-            result += alpha_j * y_j * self.polynomial_kernel(x_i, x_j)
-        return result - self.b
+                    self.w -= self.lr * (2 * self.lambda_param * self.w - np.dot(x_i, y[idx]))
+                    self.b -= self.lr * y[idx]
 
     def predict(self, X):
         """
@@ -93,11 +59,12 @@ class PolynomialSVM:
         Returns:
         - np.ndarray: Predicted labels.
         """
-        predictions = []
-        for x_i in X:
-            prediction = np.sign(self._decision_function(x_i, X, np.where(self.alpha > 0, 1, -1)))
-            predictions.append(prediction)
-        return np.array(predictions)
+        # approx = np.dot(X, self.w) - self.b
+        # return np.sign(approx)
+
+        decision_values = np.dot(X, self.w) - self.b
+        y_pred = np.sign(decision_values)
+        return y_pred, decision_values
 
     def evaluateMetrics(self, y_true, y_pred):
         """
@@ -115,6 +82,27 @@ class PolynomialSVM:
         recall = np.sum((y_pred == 1) & (y_true == 1)) / np.sum(y_true == 1) if np.sum(y_true == 1) else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) else 0
         return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1_score": f1_score}
+
+    def printRelevantFeatures(self, featureNames, topN):
+        """
+        Prints the most relevant features based on their weights.
+
+        Parameters:
+        - featureNames (list): List of feature names corresponding to the dataset columns.
+        - topN (int): The number of top features to print.
+        """
+        # Exclude bias term from analysis
+        featureImportance = abs(self.w)
+
+        # Sort features by importance
+        sortedIndices = np.argsort(featureImportance)[::-1]
+        topFeatures = [(featureNames[i], self.w[i]) for i in sortedIndices[:topN]]
+
+        print("-" * 150)
+        print(f"Top {topN} Relevant Features:")
+        for feature, weight in topFeatures:
+            print(f"    Feature: {feature}, Weight: {weight:.4f}")
+        print("-" * 150)
 
     def trainAndEvaluate(self):
         """
@@ -134,12 +122,12 @@ class PolynomialSVM:
         y_train, y_val = y[:split_index], y[split_index:]
 
         # Train the SVM
-        print("Training SVM with Polynomial Kernel...")
+        print("Training SVM...")
         self.fit(X_train, y_train)
 
         # Predict on training and validation data
-        y_pred_train = self.predict(X_train)
-        y_pred_val = self.predict(X_val)
+        y_pred_train, decision_values_train = self.predict(X_train)
+        y_pred_val, decision_values_val = self.predict(X_val)
 
         # Evaluate metrics
         print("Evaluating metrics...")
@@ -156,3 +144,13 @@ class PolynomialSVM:
         for metric, value in val_metrics.items():
             print(f"    {metric.capitalize()}: {value:.4f}")
         print("-" * 150)
+
+        # Print relevant features
+        featureNames = list(df.drop(columns=[self.targetVariable]).columns)
+        self.printRelevantFeatures(featureNames, topN=10)
+
+if __name__ == "__main__":
+    datasetPath = "./PreprocessedDataset.csv"
+    targetVariable = "LoanApproved"
+    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.01, n_iters=1000)
+    svmModel.trainAndEvaluate()

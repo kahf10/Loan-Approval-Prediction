@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-class LogisticRegressionModel:
+class LogisticRegression:
     def __init__(self, datasetPath, targetVariable):
         """
         Initializes the Logistic Regression model.
@@ -110,7 +110,30 @@ class LogisticRegressionModel:
 
         return weights, train_losses, val_losses, y_pred_train, y_pred_val
 
-    def trainAndEvaluate(self, learning_rate=0.1, epochs=3000):
+    def printRelevantFeatures(self, weights, featureNames, topN=5):
+        """
+        Prints the most relevant features based on their weights.
+
+        Parameters:
+        - weights (np.ndarray): The weights of the model (excluding the bias term).
+        - featureNames (list): List of feature names corresponding to the dataset columns.
+        - topN (int): The number of top features to print.
+        """
+        # Exclude the bias term (first weight)
+        featureWeights = weights[1:]  # Exclude the bias term
+        featureImportance = abs(featureWeights)
+
+        # Sort features by their importance
+        sortedIndices = np.argsort(featureImportance)[::-1]
+        topFeatures = [(featureNames[i], featureWeights[i]) for i in sortedIndices[:topN]]
+
+        print("-" * 150)
+        print(f"Top {topN} Relevant Features:")
+        for feature, weight in topFeatures:
+            print(f"    Feature: {feature}, Weight: {weight:.4f}")
+        print("-" * 150)
+
+    def trainAndEvaluate(self, learning_rate=0.1, epochs=3000, topNFeatures = 10):
         """
         Trains and evaluates the Logistic Regression model.
         """
@@ -138,6 +161,10 @@ class LogisticRegressionModel:
         print(f"    Accuracy: {val_accuracy:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1: {val_f1:.4f}")
         print("-" * 150)
 
+        # Print relevant features
+        featureNames = list(self.dataset.drop(columns=[self.targetVariable], errors='ignore').columns)
+        self.printRelevantFeatures(weights, featureNames, topN=topNFeatures)
+
         # Loss plot
         plt.plot(range(len(train_losses)), train_losses, label='Training Loss')
         plt.plot(range(len(val_losses)), val_losses, label='Validation Loss')
@@ -146,3 +173,9 @@ class LogisticRegressionModel:
         plt.legend()
         plt.title('Epoch vs Log-Loss')
         plt.show()
+
+if __name__ == "__main__":
+    datasetPath = "./PreprocessedDataset.csv"
+    targetVariable = "LoanApproved"
+    logisticModel = LogisticRegression(datasetPath, targetVariable)
+    logisticModel.trainAndEvaluate()

@@ -214,3 +214,8 @@ class Preprocessor:
         print("-" * lineLength)
 
         print("Preprocessing pipeline completed.")
+
+if __name__ == "__main__":
+    datasetPath = "./dataset.csv"
+    preprocessor = Preprocessor(datasetPath)
+    preprocessor.runPipeline()

@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Instantiate models
     logisticModel = LogisticRegression(datasetPath, targetVariable)
-    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.01, n_iters=1000)
+    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.005, n_iters=1000)
 
     # Split data
     X_train, y_train, X_val, y_val = logisticModel.splitData()

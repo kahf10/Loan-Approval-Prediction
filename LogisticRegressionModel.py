@@ -133,7 +133,7 @@ class LogisticRegression:
             print(f"    Feature: {feature}, Weight: {weight:.4f}")
         print("-" * 150)
 
-    def trainAndEvaluate(self, learning_rate=0.1, epochs=3000, topNFeatures = 10):
+    def trainAndEvaluate(self, learning_rate=0.1, epochs=3000):
         """
         Trains and evaluates the Logistic Regression model.
         """
@@ -163,7 +163,7 @@ class LogisticRegression:
 
         # Print relevant features
         featureNames = list(self.dataset.drop(columns=[self.targetVariable], errors='ignore').columns)
-        self.printRelevantFeatures(weights, featureNames, topN=topNFeatures)
+        self.printRelevantFeatures(weights, featureNames, topN=10)
 
         # Loss plot
         plt.plot(range(len(train_losses)), train_losses, label='Training Loss')

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 class LinearSVM:
     def __init__(self, datasetPath, targetVariable, learning_rate, lambda_param, n_iters):
@@ -21,33 +21,77 @@ class LinearSVM:
         self.n_iters = n_iters
         self.w = None
         self.b = None
+        self.train_losses = []  # Store training losses
+        self.val_losses = []    # Store validation losses
 
-    def fit(self, X, y):
+    def compute_loss(self, X, y):
+        """
+        Computes the hinge loss.
+
+        Parameters:
+        - X (np.ndarray): Feature matrix.
+        - y (np.ndarray): Target labels.
+
+        Returns:
+        - float: Loss value.
+        """
+        hinge_loss = np.maximum(0, 1 - y * (np.dot(X, self.w) - self.b)).mean()
+        reg_loss = self.lambda_param * np.sum(self.w ** 2)
+        return hinge_loss + reg_loss
+
+    def fit(self, X_train, y_train, X_val, y_val):
         """
         Fits the SVM model using the dataset.
 
         Parameters:
-        - X (np.ndarray): Feature matrix.
-        - y (np.ndarray): Target labels (expected to be -1 and 1).
+        - X_train (np.ndarray): Training feature matrix.
+        - y_train (np.ndarray): Training labels.
+        - X_val (np.ndarray): Validation feature matrix.
+        - y_val (np.ndarray): Validation labels.
         """
-        n_samples, n_features = X.shape
+        n_samples, n_features = X_train.shape
 
         # Convert labels to -1 and 1 if not already
-        y = np.where(y <= 0, -1, 1)
+        y_train = np.where(y_train <= 0, -1, 1)
+        y_val = np.where(y_val <= 0, -1, 1)
 
         # Initialize weights and bias
         self.w = np.zeros(n_features)
         self.b = 0
 
         # Training loop
-        for _ in range(self.n_iters):
-            for idx, x_i in enumerate(X):
-                condition = y[idx] * (np.dot(x_i, self.w) - self.b) >= 1
+        for iteration in range(self.n_iters):
+            for idx, x_i in enumerate(X_train):
+                condition = y_train[idx] * (np.dot(x_i, self.w) - self.b) >= 1
                 if condition:
                     self.w -= self.lr * (2 * self.lambda_param * self.w)
                 else:
-                    self.w -= self.lr * (2 * self.lambda_param * self.w - np.dot(x_i, y[idx]))
-                    self.b -= self.lr * y[idx]
+                    self.w -= self.lr * (2 * self.lambda_param * self.w - np.dot(x_i, y_train[idx]))
+                    self.b -= self.lr * y_train[idx]
+
+            # Compute losses
+            train_loss = self.compute_loss(X_train, y_train)
+            val_loss = self.compute_loss(X_val, y_val)
+
+            # Store losses
+            self.train_losses.append(train_loss)
+            self.val_losses.append(val_loss)
+
+            if iteration % 100 == 0:  # Print every 100 iterations
+                print(f"Iteration {iteration}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+
+    def plot_loss(self):
+        """
+        Plots the training and validation loss.
+        """
+        plt.plot(range(len(self.train_losses)), self.train_losses, label='Training Loss')
+        plt.plot(range(len(self.val_losses)), self.val_losses, label='Validation Loss')
+        plt.xlabel('Iterations')
+        plt.ylabel('Log Loss')
+        plt.legend()
+        plt.title('Iterations vs Log-Loss')
+        plt.grid(True)
+        plt.show()
 
     def predict(self, X):
         """
@@ -59,9 +103,6 @@ class LinearSVM:
         Returns:
         - np.ndarray: Predicted labels.
         """
-        # approx = np.dot(X, self.w) - self.b
-        # return np.sign(approx)
-
         decision_values = np.dot(X, self.w) - self.b
         y_pred = np.sign(decision_values)
         return y_pred, decision_values
@@ -104,6 +145,7 @@ class LinearSVM:
             print(f"    Feature: {feature}, Weight: {weight:.4f}")
         print("-" * 150)
 
+
     def trainAndEvaluate(self):
         """
         Trains and evaluates the SVM model on the loan approval dataset.
@@ -123,7 +165,7 @@ class LinearSVM:
 
         # Train the SVM
         print("Training SVM...")
-        self.fit(X_train, y_train)
+        self.fit(X_train, y_train, X_val, y_val)
 
         # Predict on training and validation data
         y_pred_train, decision_values_train = self.predict(X_train)
@@ -146,11 +188,16 @@ class LinearSVM:
         print("-" * 150)
 
         # Print relevant features
-        featureNames = list(df.drop(columns=[self.targetVariable]).columns)
+        featureNames = list(df.drop(columns=[self.targetVariable], errors='ignore').columns)
         self.printRelevantFeatures(featureNames, topN=10)
+
+        # Plot loss function
+        self.plot_loss()
 
 if __name__ == "__main__":
     datasetPath = "./PreprocessedDataset.csv"
     targetVariable = "LoanApproved"
-    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.01, n_iters=1000)
+    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.005, n_iters=300)
     svmModel.trainAndEvaluate()
+
+

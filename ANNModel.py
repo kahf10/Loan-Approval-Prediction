@@ -1,7 +1,9 @@
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
@@ -27,6 +29,8 @@ class ANNModel:
         self.batch_size = batch_size
         self.model = None
         self.best_model_path = "best_ann_model.pth"
+        self.train_losses = []  # Store training losses
+        self.val_losses = []    # Store validation losses
 
     class NeuralNet(nn.Module):
         def __init__(self, input_dim):
@@ -66,7 +70,7 @@ class ANNModel:
         input_dim = X_train.shape[1]
         self.model = self.NeuralNet(input_dim)
 
-        # Compute class weights for imbalanced datasets
+        # Loss function and optimizer
         criterion = nn.BCELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
@@ -99,9 +103,13 @@ class ANNModel:
                     loss = criterion(y_pred, y_batch)
                     val_loss += loss.item()
 
+            # Store losses for plotting
+            self.train_losses.append(train_loss / len(train_loader))
+            self.val_losses.append(val_loss / len(val_loader))
+
             print(
-                f"Epoch {epoch + 1}/{self.epochs}, Train Loss: {train_loss / len(train_loader):.4f}, "
-                f"Val Loss: {val_loss / len(val_loader):.4f}"
+                f"Epoch {epoch + 1}/{self.epochs}, Train Loss: {self.train_losses[-1]:.4f}, "
+                f"Val Loss: {self.val_losses[-1]:.4f}"
             )
 
             # Early Stopping
@@ -150,6 +158,38 @@ class ANNModel:
         f1 = f1_score(y_true.numpy(), y_pred.numpy())
         return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1_score": f1}
 
+    def plot_loss(self):
+        """
+        Plots the training and validation loss.
+        """
+        plt.plot(range(len(self.train_losses)), self.train_losses, label='Training Loss')
+        plt.plot(range(len(self.val_losses)), self.val_losses, label='Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Binary Cross-Entropy Loss')
+        plt.legend()
+        plt.title('Epochs vs Loss')
+        plt.grid(True)
+        plt.show()
+
+    def printRelevantFeatures(self, featureNames, topN):
+        """
+        Prints the most relevant features based on weights in the first hidden layer.
+
+        Parameters:
+        - featureNames (list): List of feature names.
+        - topN (int): Number of top features to print.
+        """
+        fc1_weights = self.model.fc1.weight.detach().numpy()
+        feature_importance = np.sum(np.abs(fc1_weights), axis=0)
+        sorted_indices = np.argsort(feature_importance)[::-1]
+        top_features = [(featureNames[i], feature_importance[i]) for i in sorted_indices[:topN]]
+
+        print("-" * 150)
+        print(f"Top {topN} Relevant Features:")
+        for feature, importance in top_features:
+            print(f"    Feature: {feature}, Importance: {importance:.4f}")
+        print("-" * 150)
+
     def trainAndEvaluate(self):
         """
         Trains and evaluates the ANN model on the dataset.
@@ -190,9 +230,16 @@ class ANNModel:
             print(f"    {metric.capitalize()}: {value:.4f}")
         print("-" * 150)
 
+        # Plot losses
+        self.plot_loss()
+
+        # Print relevant features
+        featureNames = list(df.drop(columns=[self.targetVariable]).columns)
+        self.printRelevantFeatures(featureNames, topN=10)
+
 
 if __name__ == "__main__":
     datasetPath = "./PreprocessedDataset.csv"
     targetVariable = "LoanApproved"
-    annModel = ANNModel(datasetPath, targetVariable, learning_rate=0.001, epochs=50, patience=5, batch_size=32)
+    annModel = ANNModel(datasetPath, targetVariable, learning_rate=0.001, epochs=100, patience=5, batch_size=32)
     annModel.trainAndEvaluate()

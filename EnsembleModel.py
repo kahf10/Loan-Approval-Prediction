@@ -89,7 +89,7 @@ class Ensemble:
         logit_weights, _, _, logit_train_probs, logit_val_probs = self.logit_model.trainModel(X_train, y_train, X_val,
                                                                                               y_val, learning_rate=0.1,
                                                                                               epochs=3000)
-        self.svm_model.fit(X_train, y_train)
+        self.svm_model.fit(X_train, y_train, X_val, y_val)
 
         # Get predictions for validation data
         logit_val_pred = (logit_val_probs >= 0.5).astype(int)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Instantiate models
     logisticModel = LogisticRegression(datasetPath, targetVariable)
-    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.005, n_iters=1000)
+    svmModel = LinearSVM(datasetPath, targetVariable, learning_rate=0.0005, lambda_param=0.005, n_iters=300)
 
     # Split data
     X_train, y_train, X_val, y_val = logisticModel.splitData()
